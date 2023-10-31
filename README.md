@@ -1,109 +1,147 @@
-![Visitors](https://visitor-badge.glitch.me/badge?page_id=tobran/DF-GAN) 
-[![License CC BY-NC-SA 4.0](https://img.shields.io/badge/license-CC4.0-blue.svg)](https://github.com/tobran/DF-GAN/blob/master/LICENSE.md)
-![Python 3.8](https://img.shields.io/badge/python-3.8-green.svg)
-![Packagist](https://img.shields.io/badge/Pytorch-1.9.0-red.svg)
-![Last Commit](https://img.shields.io/github/last-commit/tobran/DF-GAN)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-blue.svg)]((https://github.com/tobran/DF-GAN/graphs/commit-activity))
-![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)
-# DF-GAN: A Simple and Effective Baseline for Text-to-Image Synthesis (CVPR 2022 Oral)
+*Last updated:20231031*
 
-Official Pytorch implementation for our paper [DF-GAN: A Simple and Effective Baseline for Text-to-Image Synthesis](https://arxiv.org/abs/2008.05865) by [Ming Tao](https://scholar.google.com/citations?user=5GlOlNUAAAAJ), [Hao Tang](https://scholar.google.com/citations?user=9zJkeEMAAAAJ&hl=en), [Fei Wu](https://scholar.google.com/citations?user=tgeCjhEAAAAJ&hl=en), [Xiao-Yuan Jing](https://scholar.google.com/citations?hl=en&user=2IInQAgAAAAJ), [Bing-Kun Bao](https://scholar.google.com/citations?user=lDppvmoAAAAJ&hl=en), [Changsheng Xu](https://scholar.google.com/citations?user=hI9NRDkAAAAJ). 
+### Requirements
 
-<img src="framework.png" width="804px" height="380px"/>
+官方代码仓中的环境配置：
 
----
-## News!
-[CVPR2023]Our new simple and effective model GALIP ([paper link](https://arxiv.org/abs/2301.12959), [code link](https://github.com/tobran/GALIP)) achieves comparable results to Large Pretrained Diffusion Models! Furthermore, our GALIP is training-efficient which only requires 3% training data, 6% learnable parameters. **Our GALIP achieves ~120 x faster synthesis speed and can be inferred on CPU**. 
-
-GALIP significantly lowers the hardware threshold for training and inference. We hope that more users can find the interesting of AIGC.
-
----
-## Requirements
 - python 3.8
 - Pytorch 1.9
 - At least 1x12GB NVIDIA GPU
-## Installation
 
-Clone this repo.
 ```
 git clone https://github.com/tobran/DF-GAN
 pip install -r requirements.txt
+```
+
+
+
+复现环境：
+
+- python 3.9
+- Pytorch 1.12.0+cu116
+
+11.6的cuda版本无法下载1.9版本的torch，因此使用了1.12.0版本的torch，需要将requirements.txt中的
+
+```
+torch==1.9.0
+torchvision==0.10.0
+```
+
+这两行等号删除。
+
+
+
+安装好依赖后可能会报一些pillow等库的相关错误，解决方法均为下载更旧版本的pillow等库。
+
+---
+
+### 数据集准备
+
+1. Download the preprocessed metadata for [birds ](https://drive.google.com/file/d/1I6ybkR7L64K8hZOraEZDuHh0cCJw5OUj/view?usp=sharing) and extract them to `data/`
+2. Download the [birds](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html) image data. Extract them to `data/birds/`
+
+---
+
+### Train
+
+```bash
+bash scripts/train.sh ./cfg/bird.yml
+```
+
+##### 训练过程截图
+
+![DFGAN1](./DFGAN_image/DFGAN1.png)
+
+
+
+由于训练中断后代码被自动删除（暂未知道是什么原因导致，该作者的好几份相似代码都会发生这个情况），单次训练非常缓慢，所以训练日志文件丢失，无法对完整的训练日志进行tensorboard可视化，<u>因此只节选了10个epoch训练的可视结果</u>，后续评估模型性能使用的是已经预训练1220轮次后存储的最优模型。
+
+```
+tensorboard --logdir=./code/logs/bird/train/<对应时间的文件夹> --port 8166
+```
+
+
+
+代码支持在训练过程中自动进行FID评估，评估结果存储在TensorBoard文件中，路径为`./logs`。
+
+|      | epoch1 | epoch2 | epoch3 | epoch4 | …    |
+| ---- | ------ | ------ | ------ | ------ | ---- |
+| FID  | 369.92 | 249.05 | 261.97 | 273.65 |      |
+
+FID是一种用于评估图像生成模型质量的指标。它通过比较生成图像的特征分布与真实图像的特征分布之间的差异来度量生成图像的逼真程度。在FID评估中，使用预训练的卷积神经网络（通常是Inception网络）来提取图像的特征表示，然后计算生成图像和真实图像特征表示之间的Fréchet距离。FID值越低，表示生成图像的分布越接近真实图像的分布
+
+![DFGAN3](./DFGAN_image/DFGAN3.png)
+
+![DFGAN4](./DFGAN_image/DFGAN4.png)
+
+---
+
+### Evaluation
+
+##### Download Pretrained Model
+
+[DF-GAN for bird](https://drive.google.com/file/d/1rzfcCvGwU8vLCrn5reWxmrAMms6WQGA6/view?usp=sharing). Download and save it to `./code/saved_models/bird/`
+
+下载`pretrained_bird.zip`后解压到`saved_models`下，运行指令
+
+```bash
+bash scripts/calc_FID.sh ./cfg/bird.yml
+```
+
+开始评估。
+
+##### 评估部分截图
+
+![DFGAN2](./DFGAN_image/DFGAN2.png)
+
+对预训练模型的评估结果：
+
+|       | FID   |
+| ----- | ----- |
+| DFGAN | 12.25 |
+
+---
+
+### Sampling
+
+```
 cd DF-GAN/code/
 ```
 
-## Preparation
-### Datasets
-1. Download the preprocessed metadata for [birds](https://drive.google.com/file/d/1I6ybkR7L64K8hZOraEZDuHh0cCJw5OUj/view?usp=sharing) [coco](https://drive.google.com/file/d/15Fw-gErCEArOFykW3YTnLKpRcPgI_3AB/view?usp=sharing) and extract them to `data/`
-2. Download the [birds](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html) image data. Extract them to `data/birds/`
-3. Download [coco2014](http://cocodataset.org/#download) dataset and extract the images to `data/coco/images/`
+##### Synthesize images from example captions
 
+- For bird dataset: `bash scripts/sample.sh ./cfg/bird.yml`
 
-## Training
-  ```
-  cd DF-GAN/code/
-  ```
-### Train the DF-GAN model
-  - For bird dataset: `bash scripts/train.sh ./cfg/bird.yml`
-  - For coco dataset: `bash scripts/train.sh ./cfg/coco.yml`
-### Resume training process
-If your training process is interrupted unexpectedly, set **resume_epoch** and **resume_model_path** in train.sh to resume training.
+##### Synthesize images from your text descriptions
 
-### TensorBoard
-Our code supports automate FID evaluation during training, the results are stored in TensorBoard files under ./logs. You can change the test interval by changing **test_interval** in the YAML file.
-  - For bird dataset: `tensorboard --logdir=./code/logs/bird/train --port 8166`
-  - For coco dataset: `tensorboard --logdir=./code/logs/coco/train --port 8177`
-
-## Evaluation
-
-### Download Pretrained Model
-- [DF-GAN for bird](https://drive.google.com/file/d/1rzfcCvGwU8vLCrn5reWxmrAMms6WQGA6/view?usp=sharing). Download and save it to `./code/saved_models/bird/`
-- [DF-GAN for coco](https://drive.google.com/file/d/1e_AwWxbClxipEnasfz_QrhmLlv2-Vpyq/view?usp=sharing). Download and save it to `./code/saved_models/coco/`
-
-### Evaluate DF-GAN models
-We synthesize about 3w images from the test descriptions and evaluate the FID between **synthesized images** and **test images** of each dataset.
-  ```
-  cd DF-GAN/code/
-  ```
-- For bird dataset: `bash scripts/calc_FID.sh ./cfg/bird.yml`
-- For coco dataset: `bash scripts/calc_FID.sh ./cfg/coco.yml`
-- We compute inception score for models trained on birds using [StackGAN-inception-model](https://github.com/hanzhanggit/StackGAN-inception-model). 
-
-### Some tips
-- Our evaluation codes do not save the synthesized images (about 3w images). If you want to save them, set **save_image: True** in the YAML file.
-- Since we find that the IS can be overfitted heavily through Inception-V3 jointed training, we do not recommend the IS metric for text-to-image synthesis.
-
-### Performance
-The released model achieves better performance than the CVPR paper version.
-
-
-| Model | CUB-FID↓ | COCO-FID↓ |NOP↓ |
-| --- | --- | --- | --- |
-| DF-GAN(paper) | 14.81 | 19.32 | 19M |
-| DF-GAN(pretrained model) | **12.10** | **15.41** | **18M** |
-
-
-
-## Sampling
-  ```
-  cd DF-GAN/code/
-  ```
-### Synthesize images from example captions
-  - For bird dataset: `bash scripts/sample.sh ./cfg/bird.yml`
-  - For coco dataset: `bash scripts/sample.sh ./cfg/coco.yml`
-  
-### Synthesize images from your text descriptions
-  - Replace your text descriptions into the ./code/example_captions/dataset_name.txt
-  - For bird dataset: `bash scripts/sample.sh ./cfg/bird.yml`
-  - For coco dataset: `bash scripts/sample.sh ./cfg/coco.yml`
+- Replace your text descriptions into the `./code/example_captions/dataset_name.txt`
+- For bird dataset: `bash scripts/sample.sh ./cfg/bird.yml`
 
 The synthesized images are saved at ./code/samples.
 
-<img src="selected_samples.jpg" width="804px" height="306px"/>
+
+
+##### txt2img
+
+![DFGAN5](./DFGAN_image/DFGAN5.png)
+
+
+
+根据我输入的一个描述
+
+"A bird with vibrant, multicolored feathers, resembling a living rainbow."
+
+生成的`png27`：
+
+![DFGAN6](./DFGAN_image/DFGAN6.png)
+
+
 
 ---
-### Citing DF-GAN
 
-If you find DF-GAN useful in your research, please consider citing our paper:
+
+
+#### Citing DF-GAN
 
 ```
 @inproceedings{tao2022df,
@@ -114,10 +152,4 @@ If you find DF-GAN useful in your research, please consider citing our paper:
   year={2022}
 }
 ```
-The code is released for academic research use only. For commercial use, please contact [Ming Tao](mingtao2000@126.com).
 
-**Reference**
-
-- [StackGAN++: Realistic Image Synthesis with Stacked Generative Adversarial Networks](https://arxiv.org/abs/1710.10916) [[code]](https://github.com/hanzhanggit/StackGAN-v2)
-- [AttnGAN: Fine-Grained Text to Image Generation with Attentional Generative Adversarial Networks](https://openaccess.thecvf.com/content_cvpr_2018/papers/Xu_AttnGAN_Fine-Grained_Text_CVPR_2018_paper.pdf) [[code]](https://github.com/taoxugit/AttnGAN)
-- [DM-GAN: Realistic Image Synthesis with Stacked Generative Adversarial Networks](https://arxiv.org/abs/1904.01310) [[code]](https://github.com/MinfengZhu/DM-GAN)
